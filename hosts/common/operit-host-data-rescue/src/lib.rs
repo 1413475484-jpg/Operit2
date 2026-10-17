@@ -775,7 +775,10 @@ fn absolute_root(path: &Path) -> Result<PathBuf, String> {
     if !path.is_absolute() || path.components().any(|part| matches!(part, std::path::Component::ParentDir | std::path::Component::CurDir)) {
         return Err("Data roots must be normalized absolute directories".into());
     }
-    for ancestor in path.ancestors() { reject_symlink(ancestor)?; }
+    // System roots such as /var are symbolic links on iOS and macOS, so the sandbox
+    // path itself always contains one OS-level link component. Only the requested
+    // directory must not be a link; descendants are validated as they are created.
+    reject_symlink(path)?;
     Ok(path.to_path_buf())
 }
 
