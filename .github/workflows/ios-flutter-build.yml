@@ -42,8 +42,31 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  build-ish-sources:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch iSH source archives
+        run: python3 tools/ios-runtime/ish/fetch_sources.py
+
+      - name: Upload iSH source archives
+        uses: actions/upload-artifact@v4
+        with:
+          name: operit2-ios-ish-sources-${{ github.sha }}
+          path: tools/ios-runtime/ish/downloads
+          if-no-files-found: error
+          retention-days: 1
+
   build-ios:
-    needs: build-ish-rootfs
+    needs: [build-ish-rootfs, build-ish-sources]
     runs-on: macos-15
     timeout-minutes: 90
     env:
@@ -65,6 +88,12 @@ jobs:
         with:
           name: operit2-ios-ish-rootfs-${{ github.sha }}
           path: apps/flutter/app/ios/Runner
+
+      - name: Download iSH source archives
+        uses: actions/download-artifact@v4
+        with:
+          name: operit2-ios-ish-sources-${{ github.sha }}
+          path: tools/ios-runtime/ish/downloads
 
       - name: Install bootstrap Dart
         uses: dart-lang/setup-dart@v1
@@ -167,7 +196,6 @@ jobs:
           .ci-tools/typescript/node_modules/.bin/tsc --version
           # The ToolPkg build scripts call bare `pnpm`, which is only reachable through a
           # corepack shim, and the Xcode script phase needs that shim on PATH too.
-          mkdir -p "$HOME/.corepack-bin"
           corepack enable --install-directory "$HOME/.corepack-bin"
           export PATH="$HOME/.corepack-bin:$PATH"
           echo "$HOME/.corepack-bin" >> "$GITHUB_PATH"
