@@ -165,11 +165,17 @@ jobs:
         run: |
           npm install --prefix .ci-tools/typescript --no-audit --no-fund typescript@5.9.3
           .ci-tools/typescript/node_modules/.bin/tsc --version
+          # The ToolPkg build scripts call bare `pnpm`, which is only reachable through a
+          # corepack shim, and the Xcode script phase needs that shim on PATH too.
+          corepack enable --install-directory "$HOME/.corepack-bin"
+          export PATH="$HOME/.corepack-bin:$PATH"
+          echo "$HOME/.corepack-bin" >> "$GITHUB_PATH"
+          pnpm --version
           # The built-in ToolPkgs resolve their modules from workflow/node_modules via
           # createRequire("../../workflow/package.json"), and the sync script processes
           # character_cards before workflow, so install here first.
           cd plugins/packages/buildin/workflow
-          corepack pnpm install --frozen-lockfile
+          pnpm install --frozen-lockfile
           node -e "console.log('esbuild', require('esbuild').version, '| typescript', require('typescript').version)"
 
       - name: Build and package unsigned iOS app
