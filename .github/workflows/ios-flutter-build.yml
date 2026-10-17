@@ -167,6 +167,7 @@ jobs:
           .ci-tools/typescript/node_modules/.bin/tsc --version
           # The ToolPkg build scripts call bare `pnpm`, which is only reachable through a
           # corepack shim, and the Xcode script phase needs that shim on PATH too.
+          mkdir -p "$HOME/.corepack-bin"
           corepack enable --install-directory "$HOME/.corepack-bin"
           export PATH="$HOME/.corepack-bin:$PATH"
           echo "$HOME/.corepack-bin" >> "$GITHUB_PATH"
