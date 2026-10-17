@@ -161,17 +161,16 @@ jobs:
           test -f apps/flutter/app/lib/core/proxy/generated/CoreProxyClients.g.dart
           test -f apps/flutter/app/lib/core/proxy/generated/CoreProxyModels.g.dart
 
-      - name: Prepare TypeScript for plugin sync
+      - name: Prepare plugin package dependencies
         run: |
           npm install --prefix .ci-tools/typescript --no-audit --no-fund typescript@5.9.3
           .ci-tools/typescript/node_modules/.bin/tsc --version
-          # character_cards/scripts/check.mjs does require('typescript'); node resolves it by
-          # walking up from plugins/packages/buildin/character_cards, so place it one level up.
-          mkdir -p plugins/packages/buildin/node_modules
-          rm -rf plugins/packages/buildin/node_modules/typescript
-          cp -R .ci-tools/typescript/node_modules/typescript plugins/packages/buildin/node_modules/typescript
-          cd plugins/packages/buildin/character_cards
-          node -e "console.log('typescript resolved:', require('typescript').version)"
+          # The built-in ToolPkgs resolve their modules from workflow/node_modules via
+          # createRequire("../../workflow/package.json"), and the sync script processes
+          # character_cards before workflow, so install here first.
+          cd plugins/packages/buildin/workflow
+          corepack pnpm install --frozen-lockfile
+          node -e "console.log('esbuild', require('esbuild').version, '| typescript', require('typescript').version)"
 
       - name: Build and package unsigned iOS app
         run: python3 tools/build_scripts/build_flutter_ios.py
