@@ -2,9 +2,7 @@
 from __future__ import annotations
 
 import hashlib
-import os
 import shutil
-import time
 import urllib.request
 import zipfile
 from dataclasses import dataclass
@@ -78,24 +76,9 @@ def download_archive(url: str, archive_path: Path, expected_sha256: str) -> None
         return
     temporary_path = archive_path.with_suffix(archive_path.suffix + ".part")
     temporary_path.unlink(missing_ok=True)
-    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
-    for attempt in range(1, 6):
-        temporary_path.unlink(missing_ok=True)
-        try:
-            request = urllib.request.Request(url, headers={"User-Agent": "operit-ci"})
-            if token:
-                request.add_header("Authorization", f"Bearer {token}")
-            with urllib.request.urlopen(request, timeout=180) as response:
-                with temporary_path.open("wb") as output:
-                    shutil.copyfileobj(response, output, length=1024 * 1024)
-            break
-        except Exception as error:
-            temporary_path.unlink(missing_ok=True)
-            if attempt == 5:
-                raise
-            delay = 30 * attempt
-            print(f"Download attempt {attempt} failed ({error}); retrying in {delay}s", flush=True)
-            time.sleep(delay)
+    with urllib.request.urlopen(url, timeout=120) as response:
+        with temporary_path.open("wb") as output:
+            shutil.copyfileobj(response, output, length=1024 * 1024)
     actual_sha256 = file_sha256(temporary_path)
     if actual_sha256 != expected_sha256:
         raise RuntimeError(
