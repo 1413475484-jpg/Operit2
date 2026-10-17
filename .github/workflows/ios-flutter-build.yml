@@ -47,6 +47,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 90
     env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       RUSTFLAGS: -Awarnings
       RUST_TOOLCHAIN_VERSION: 1.95.0
       FVM_VERSION: 4.3.0
@@ -159,6 +160,11 @@ jobs:
           cargo check --manifest-path core/crates/proxy/local/Cargo.toml --quiet
           test -f apps/flutter/app/lib/core/proxy/generated/CoreProxyClients.g.dart
           test -f apps/flutter/app/lib/core/proxy/generated/CoreProxyModels.g.dart
+
+      - name: Prepare TypeScript compiler for plugin sync
+        run: |
+          npm install --prefix .ci-tools/typescript --no-audit --no-fund typescript@5.9.3
+          .ci-tools/typescript/node_modules/.bin/tsc --version
 
       - name: Build and package unsigned iOS app
         run: python3 tools/build_scripts/build_flutter_ios.py
